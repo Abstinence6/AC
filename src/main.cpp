@@ -265,7 +265,7 @@ void loop() {
      
     hvac.setCurrentTemperature(cTemp);
 
-    Temp.setValue(cTemp);
+    Temp.setValue(cTemp-2);
     Hum.setValue(humidity);
     lastTempPublishAt = millis();
   }
