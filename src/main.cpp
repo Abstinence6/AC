@@ -1,15 +1,12 @@
 #include <Arduino.h>
-
-#include <IRsend.h>
-#include <ir_Gree.h>
-//#include <IRGree.h>
-
-#include <ArduinoHA.h>
-
+#include "ArduinoOTA.h"
 #include <ESP8266WiFi.h>  
 #include <ESP8266HTTPClient.h>
 
-#include "ArduinoOTA.h"
+#include <ArduinoHA.h>
+
+#include <IRsend.h>
+#include <ir_Gree.h>
 
 #include <Wire.h>
 
@@ -239,14 +236,14 @@ void setup() {
 void loop() {
   ArduinoOTA.handle();
 
-  if ((millis() - lastTempPublishAt) > 3000) {
+  if ((millis() - lastTempPublishAt) > 1e3) {
     unsigned int data[6];
   
     Wire.beginTransmission(Addr);
     Wire.write(0x2C);
     Wire.write(0x06);
     Wire.endTransmission();
-    delay(10);
+    delay(1);
 
     Wire.requestFrom(Addr, 6);
 
@@ -262,10 +259,10 @@ void loop() {
 
     float cTemp = ((((data[0] * 256.0) + data[1]) * 175) / 65535.0) - 45;
     float humidity = ((((data[3] * 256.0) + data[4]) * 100) / 65535.0);
-     
+    cTemp-=2.5; 
     hvac.setCurrentTemperature(cTemp);
 
-    Temp.setValue(cTemp-2);
+    Temp.setValue(cTemp);
     Hum.setValue(humidity);
     lastTempPublishAt = millis();
   }
