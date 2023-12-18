@@ -32,7 +32,6 @@ HASensorNumber Hum("Hum", HASensorNumber::PrecisionP1);
 #define Addr 0x45
 
 unsigned long lastTempPublishAt = 0;
-float lastTemp = 0;
 
 void SetState(){
   mqtt.loop();
@@ -158,7 +157,8 @@ void setup() {
     Serial.print(".");
   }
 
-  device.setName("AC");
+  device.setName("Кондиціонер");
+  device.setModel("Gree");
   device.setSoftwareVersion("1.0.0");
   device.enableSharedAvailability();
   device.enableLastWill();
