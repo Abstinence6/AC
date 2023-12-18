@@ -22,7 +22,7 @@ HAMqtt mqtt(client, device);
 
 #define BROKER_ADDR     IPAddress(192,168,1,159)
 
-IRGreeAC irg(D8, gree_ac_remote_model_t::YAW1F , false , true);
+IRGreeAC irg(D7, gree_ac_remote_model_t::YAW1F , false , true);
 
 HAHVAC hvac("Gree", HAHVAC::DefaultFeatures | HAHVAC::ActionFeature | HAHVAC::PowerFeature | HAHVAC::FanFeature | HAHVAC::ModesFeature | HAHVAC::TargetTemperatureFeature | HAHVAC::SwingFeature);
 
@@ -236,7 +236,7 @@ void setup() {
 void loop() {
   ArduinoOTA.handle();
 
-  if ((millis() - lastTempPublishAt) > 1e3) {
+  if ((millis() - lastTempPublishAt) > 5e2) {
     unsigned int data[6];
   
     Wire.beginTransmission(Addr);
@@ -259,7 +259,7 @@ void loop() {
 
     float cTemp = ((((data[0] * 256.0) + data[1]) * 175) / 65535.0) - 45;
     float humidity = ((((data[3] * 256.0) + data[4]) * 100) / 65535.0);
-    cTemp-=2.5; 
+
     hvac.setCurrentTemperature(cTemp);
 
     Temp.setValue(cTemp);
@@ -267,4 +267,6 @@ void loop() {
     lastTempPublishAt = millis();
   }
   mqtt.loop();
+  //delay(10);
+  //irg.send();
 }
