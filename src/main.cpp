@@ -8,8 +8,6 @@
 #include <IRsend.h>
 #include <ir_Gree.h>
 
-#include <Wire.h>
-
 #include "EEPROM.h"
 
 const char* ssid = "Mi Wi-Fi";
@@ -20,18 +18,14 @@ WiFiClient client;
 HADevice device(mac, sizeof(mac));
 HAMqtt mqtt(client, device);
 
-#define BROKER_ADDR     IPAddress(192,168,1,159)
+#define BROKER_ADDR IPAddress(192,168,1,247)
+#define BROKER_PORT 1883
+#define BROKER_LOG "HAMQTT"
+#define BROKER_PASS "gisterezis"
 
 IRGreeAC irg(D7, gree_ac_remote_model_t::YAW1F , false , true);
 
 HAHVAC hvac("Gree", HAHVAC::DefaultFeatures | HAHVAC::ActionFeature | HAHVAC::PowerFeature | HAHVAC::FanFeature | HAHVAC::ModesFeature | HAHVAC::TargetTemperatureFeature | HAHVAC::SwingFeature);
-
-HASensorNumber Temp("Temp", HASensorNumber::PrecisionP1);
-HASensorNumber Hum("Hum", HASensorNumber::PrecisionP1);
-
-#define Addr 0x45
-
-unsigned long lastTempPublishAt = 0;
 
 void SetState(){
   mqtt.loop();
@@ -90,6 +84,8 @@ void SetState(){
 
 void onTargetTemperatureCommand(HANumeric temperature, HAHVAC* sender) {
     sender->setTargetTemperature(temperature); 
+    sender->setCurrentTemperature(temperature);
+
     irg.on();
     SetState();
     irg.send();
@@ -167,7 +163,7 @@ void setup() {
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
 
-  mqtt.begin(BROKER_ADDR,1883,"HAMQTT","gisterezis");
+  mqtt.begin(BROKER_ADDR,BROKER_PORT,BROKER_LOG, BROKER_PASS);
   Serial.println("MQTT connected");
 
   ArduinoOTA.onStart([]() {
@@ -200,15 +196,7 @@ void setup() {
   hvac.onModeCommand(onModeCommand);
   hvac.onTargetTemperatureCommand(onTargetTemperatureCommand);
 
-  Temp.setIcon("mdi:thermometer");
-  Temp.setName("Temperature");
-
-  Hum.setIcon("mdi:water-percent");
-  Hum.setName("Humidity");
-
   irg.begin();
-
-  Wire.begin();
 
   mqtt.loop();
 
@@ -235,38 +223,5 @@ void setup() {
 
 void loop() {
   ArduinoOTA.handle();
-
-  if ((millis() - lastTempPublishAt) > 5e2) {
-    unsigned int data[6];
-  
-    Wire.beginTransmission(Addr);
-    Wire.write(0x2C);
-    Wire.write(0x06);
-    Wire.endTransmission();
-    delay(1);
-
-    Wire.requestFrom(Addr, 6);
-
-    if (Wire.available() == 6)
-    {
-    data[0] = Wire.read();
-    data[1] = Wire.read();
-    data[2] = Wire.read();
-    data[3] = Wire.read();
-    data[4] = Wire.read();
-    data[5] = Wire.read();
-    }
-
-    float cTemp = ((((data[0] * 256.0) + data[1]) * 175) / 65535.0) - 45;
-    float humidity = ((((data[3] * 256.0) + data[4]) * 100) / 65535.0);
-
-    hvac.setCurrentTemperature(cTemp);
-
-    Temp.setValue(cTemp);
-    Hum.setValue(humidity);
-    lastTempPublishAt = millis();
-  }
   mqtt.loop();
-  //delay(10);
-  //irg.send();
 }
